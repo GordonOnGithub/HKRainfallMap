@@ -12,6 +12,18 @@ class RainfallData(val updateTimeString: String, val forecastTimestring: String,
     val position: LatLng = LatLng(lat, lng)
     val expectedRainfall: Double = rainfall
 
+    fun tilePolygonPoints () : List<LatLng>{
+
+        var list = mutableListOf<LatLng>()
+        list.add(LatLng(position.latitude - 0.009f, position.longitude - 0.01f))
+        list.add(LatLng(position.latitude - 0.009f, position.longitude + 0.01f))
+        list.add(LatLng(position.latitude + 0.009f, position.longitude + 0.01f))
+        list.add(LatLng(position.latitude + 0.009f, position.longitude - 0.01f))
+
+
+        return list
+    }
+
     companion object {
         fun fromCSVLine(data: List<String>) : RainfallData? {
             if (data.count() != 5) { return null }

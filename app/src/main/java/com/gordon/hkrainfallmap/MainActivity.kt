@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.gordon.hkrainfallmap.ui.theme.HKRainfallMapTheme
 
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
 
 import com.google.maps.android.compose.*
 
@@ -126,22 +127,18 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         mapViewModel.updateRainfallDataSet()
                     }
         ) {
-            for (data in displayedDataSet.values) {
-                val tile =
-                    getRainfallTileBitmapDescriptor(data) ?: continue
 
-                GroundOverlay(
-                    position = GroundOverlayPosition.create(
-                        data.position,
-                        2000f,
-                        2000f
-                    ),
-                    image = tile ,
-                    transparency = 0.5f
-                )
+            Polygon(points = mapViewModel.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
+
+            for (data in displayedDataSet.values) {
+                val color = getTileColor(data) ?: continue
+
+                Polygon(points = data.tilePolygonPoints(), fillColor = color, strokeWidth = 0f)
+
             }
         }
     }
+
 
     @Composable
     fun predictionTimeSwitch(modifier: Modifier){
@@ -180,54 +177,28 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
     }
 
-    var redTile : BitmapDescriptor? = null
-    var orangeTile : BitmapDescriptor? = null
-    var yellowTile : BitmapDescriptor? = null
-    var greenTile: BitmapDescriptor? = null
-    var blueTile: BitmapDescriptor? = null
-
-    @Composable
-    fun getRainfallTileBitmapDescriptor(data : RainfallData) : BitmapDescriptor? {
-        if (redTile == null) {
-            redTile = BitmapDescriptorFactory.fromResource(R.drawable.red_tile)
-        }
-
-        if(orangeTile == null ) {
-            orangeTile = BitmapDescriptorFactory.fromResource(R.drawable.orange_tile)
-        }
-
-        if(yellowTile == null) {
-            yellowTile = BitmapDescriptorFactory.fromResource(R.drawable.yellow_tile)
-        }
-
-        if (greenTile == null) {
-            greenTile = BitmapDescriptorFactory.fromResource(R.drawable.green_tile)
-        }
-
-        if(blueTile == null) {
-            blueTile = BitmapDescriptorFactory.fromResource(R.drawable.blue_tile)
-        }
+    fun getTileColor(data: RainfallData) : Color? {
 
         if (!mapViewModel.HKBoundary.contains(data.position)) { return null }
 
         if (data.rainfall > 20) {
-            return redTile
+            return Color(0x48FF0000)
         }
 
         if (data.rainfall > 10) {
-            return orangeTile
+            return Color(0x48FF8000)
         }
 
         if (data.rainfall > 5) {
-            return yellowTile
+            return Color(0x48FFFF00)
         }
 
         if (data.rainfall > 2.5) {
-            return greenTile
+            return Color(0x4800FF00)
         }
 
         if (data.rainfall > 0.5) {
-            return blueTile
+            return Color(0x480000FF)
         }
 
         return null

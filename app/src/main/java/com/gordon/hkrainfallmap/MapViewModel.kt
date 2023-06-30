@@ -34,7 +34,9 @@ class MapViewModel(apiManager: APIManagerType = MockAPIManager()) : ViewModel() 
     val isLocationAccessGranted : MutableLiveData<Boolean> = MutableLiveData(false)
 
     val HKLatLng = LatLng(22.2765473,114.1878291)
-    val HKBoundary = LatLngBounds(LatLng(22.154374, 113.817319), LatLng(22.6305693,114.4136003))
+    val HKBoundary = LatLngBounds(LatLng(22.12, 113.83), LatLng(22.66,114.42))
+    val HKBoundaryPolygonPoints : List<LatLng> = listOf( LatLng(22.12, 113.83), LatLng(22.12, 114.42),LatLng(22.66, 114.42), LatLng(22.66,113.83))
+
     val mapMinZoomLevel = 10.0f
     val mapMaxZoomLevel = 15.0f
 
