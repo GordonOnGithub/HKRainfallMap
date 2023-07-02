@@ -1,10 +1,15 @@
 package com.gordon.hkrainfallmap
 
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+
 interface RainfallDataSetParserType {
     fun parse(rawDataString : String?) : RainfallDataSet?
 }
 
-class RainfallDataSetParser : RainfallDataSetParserType {
+class RainfallDataSetParser(mapBoundaryfilter : LatLngBounds = MapConstants.HKBoundary) : RainfallDataSetParserType {
+
+    var boundaryFilter = mapBoundaryfilter
 
     override fun parse(rawDataString : String?) : RainfallDataSet? {
 
@@ -22,6 +27,9 @@ class RainfallDataSetParser : RainfallDataSetParserType {
         for (dataString in dataArray) {
             val parametersArray = dataString.split(',')
             val rainfallData = RainfallData.fromCSVLine(parametersArray) ?: continue
+
+            if(! boundaryFilter.contains(rainfallData.position)) { continue }
+
 
             var latLngMap = parsedDataArrayMap[rainfallData.forecastDate] ?: mutableMapOf()
 

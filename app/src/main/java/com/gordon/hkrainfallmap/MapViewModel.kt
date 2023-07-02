@@ -13,7 +13,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MapViewModel(apiManager: APIManagerType = MockAPIManager()) : ViewModel() {
+class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     private val apiManager: APIManagerType = apiManager
 
@@ -33,9 +33,9 @@ class MapViewModel(apiManager: APIManagerType = MockAPIManager()) : ViewModel() 
 
     val isLocationAccessGranted : MutableLiveData<Boolean> = MutableLiveData(false)
 
-    val HKLatLng = LatLng(22.2765473,114.1878291)
-    val HKBoundary = LatLngBounds(LatLng(22.12, 113.83), LatLng(22.66,114.42))
-    val HKBoundaryPolygonPoints : List<LatLng> = listOf( LatLng(22.12, 113.83), LatLng(22.12, 114.42),LatLng(22.66, 114.42), LatLng(22.66,113.83))
+//    val HKLatLng = LatLng(22.2765473,114.1878291)
+//    val HKBoundary = LatLngBounds(LatLng(22.12, 113.83), LatLng(22.66,114.42))
+//    val HKBoundaryPolygonPoints : List<LatLng> = listOf( LatLng(22.12, 113.83), LatLng(22.12, 114.42),LatLng(22.66, 114.42), LatLng(22.66,113.83))
 
     val mapMinZoomLevel = 10.0f
     val mapMaxZoomLevel = 15.0f
@@ -66,8 +66,6 @@ class MapViewModel(apiManager: APIManagerType = MockAPIManager()) : ViewModel() 
             // failure
             _isFetchingData.postValue(false)
         })
-
-
 
     }
 

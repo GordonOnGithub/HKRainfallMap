@@ -28,47 +28,12 @@ class RainfallAPICallback(parser: RainfallDataSetParserType = RainfallDataSetPar
     override fun onResponse(call: Call, response: Response) {
         val body = response.body?.string()
 
-//        if (body.isNullOrEmpty()) {
-//            onFailureBlock?.let { it() }
-//            return
-//        }
-
         val dataSet = dataSetParser.parse(body)
 
         if (dataSet.isNullOrEmpty()){
-            println("[RainfallAPICallback] failure")
-
             onFailureBlock?.let { it() }
             return
         }
-
-
-//        var dataArray = body.split('\n')
-//        if (dataArray.count() < 2) {
-//            onFailureBlock?.let { it() }
-//            return
-//        }
-//
-//        dataArray = dataArray.subList(1, dataArray.count() - 1)
-//
-//        var parsedDataArrayMap: RainfallDataSet = mutableMapOf()
-//
-//        for (dataString in dataArray) {
-//            val parametersArray = dataString.split(',')
-//            val rainfallData = RainfallData.fromCSVLine(parametersArray) ?: continue
-//
-//            var latLngMap = parsedDataArrayMap[rainfallData.forecastDate] ?: mutableMapOf()
-//
-//            if(latLngMap.isEmpty()) {
-//                parsedDataArrayMap[rainfallData.forecastDate] = latLngMap
-//            }
-//
-//            latLngMap[rainfallData.position] = rainfallData
-//
-//
-//        }
-
-        println("[RainfallAPICallback] success")
 
         onDataReceivedBlock?.let { it(dataSet) }
     }

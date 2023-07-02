@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     @Composable
     fun rainfallMap(modifier: Modifier) {
         val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(mapViewModel.HKLatLng, 10f)
+            position = CameraPosition.fromLatLngZoom(MapConstants.HKLatLng, 10f)
         }
 
         val displayedDataSet : LatLngRainfallDataMap by mapViewModel.displayedRainfallDataMap.observeAsState(
@@ -115,12 +115,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             false
         )
 
+        val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
+            false
+        )
+
         GoogleMap(
             modifier = modifier,
             cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(rotationGesturesEnabled = false, tiltGesturesEnabled = false, scrollGesturesEnabled = !isFetchingData),
             properties = MapProperties(
                 isMyLocationEnabled = isLocationAccessGranted,
-                latLngBoundsForCameraTarget = mapViewModel.HKBoundary,
+                latLngBoundsForCameraTarget = MapConstants.HKBoundary,
                 minZoomPreference = mapViewModel.mapMinZoomLevel,
                 maxZoomPreference = mapViewModel.mapMaxZoomLevel),
             onMapLoaded = {
@@ -128,7 +133,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     }
         ) {
 
-            Polygon(points = mapViewModel.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
+            Polygon(points = MapConstants.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
 
             for (data in displayedDataSet.values) {
                 val color = getTileColor(data) ?: continue
@@ -178,8 +183,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     fun getTileColor(data: RainfallData) : Color? {
-
-        if (!mapViewModel.HKBoundary.contains(data.position)) { return null }
 
         if (data.rainfall > 20) {
             return Color(0x48FF0000)
