@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Date
 
 class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
@@ -33,12 +34,12 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     val isLocationAccessGranted : MutableLiveData<Boolean> = MutableLiveData(false)
 
-//    val HKLatLng = LatLng(22.2765473,114.1878291)
-//    val HKBoundary = LatLngBounds(LatLng(22.12, 113.83), LatLng(22.66,114.42))
-//    val HKBoundaryPolygonPoints : List<LatLng> = listOf( LatLng(22.12, 113.83), LatLng(22.12, 114.42),LatLng(22.66, 114.42), LatLng(22.66,113.83))
+    val showMapLegend : MutableLiveData<Boolean> = MutableLiveData(false)
 
-    val mapMinZoomLevel = 10.0f
-    val mapMaxZoomLevel = 15.0f
+    private val _lastUpdateTimestamp : MutableLiveData<Date?> = MutableLiveData(null)
+    val lastUpdateTimestamp : LiveData<Date?> = _lastUpdateTimestamp
+
+    val showTimeMenu : MutableLiveData<Boolean> = MutableLiveData(false)
 
     fun updateRainfallDataSet () {
         _isFetchingData.postValue(true)
@@ -46,6 +47,8 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
             GlobalScope.launch {
                 withContext(Dispatchers.Main) {
+
+                    _lastUpdateTimestamp.value = Date()
                     _rainfallDataSet.value = it
 
                     sortedDatetimeString = it.keys.sortedWith(Comparator<DateTimeString>{ a, b ->
@@ -64,7 +67,15 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
         }) {
             // failure
-            _isFetchingData.postValue(false)
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) {
+                    _lastUpdateTimestamp.value = Date()
+
+                    _rainfallDataSet.value = mutableMapOf()
+
+                    _isFetchingData.postValue(false)
+                }
+            }
         })
 
     }

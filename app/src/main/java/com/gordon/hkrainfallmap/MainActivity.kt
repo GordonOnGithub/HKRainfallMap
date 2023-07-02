@@ -2,6 +2,7 @@ package com.gordon.hkrainfallmap
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Paint.Style
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,9 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -23,8 +28,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.LocationSource
@@ -37,6 +44,9 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 
 import com.google.maps.android.compose.*
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -74,8 +84,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                     Box(contentAlignment = Alignment.Center) {
                         Column(verticalArrangement = Arrangement.Top) {
-                            rainfallMap(modifier = Modifier.weight(5f, fill = true))
-                            predictionTimeSwitch( modifier = Modifier.weight(1f, fill = true))
+                            rainfallMap(modifier = Modifier.weight(6f, fill = true))
+                            predictionTimeSwitch( modifier = Modifier
+                                .weight(1f, fill = true)
+                                .fillMaxWidth())
+                            dataStatusBar(modifier = Modifier
+                                .weight(1f, fill = true)
+                                .fillMaxWidth())
 
                             val isLocationAccessGranted : Boolean by mapViewModel.isLocationAccessGranted.observeAsState(
                                 false
@@ -95,10 +110,48 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         if (isFetchingData) {
                             CircularProgressIndicator()
                         }
+
+                        val showMapLegend : Boolean by mapViewModel.showMapLegend.observeAsState(
+                            false
+                        )
+                        
+                        if (showMapLegend) {
+                            mapLegendDialog()
+                        }
                     }
                 }
             }
         }
+    }
+
+
+    @Composable
+    fun mapLegendDialog(){
+
+        AlertDialog(onDismissRequest = {
+            mapViewModel.showMapLegend.postValue(false)
+        },
+            title = {
+                Text("Half-hourly Nowcast Accumulated Rainfall (mm)")
+            },
+            text = {
+                Column() {
+                    Text("0.5mm - 2.5mm", style = TextStyle(background = MapConstants.blueTileColor))
+                    Text("2.5mm - 5mm  ", style = TextStyle(background = MapConstants.greenTileColor))
+                    Text("5mm - 10mm   ", style = TextStyle(background = MapConstants.yellowTileColor))
+                    Text("10mm - 20mm  ", style = TextStyle(background = MapConstants.orangeTileColor))
+                    Text("20mm+        ", style = TextStyle(background = MapConstants.redTileColor))
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    mapViewModel.showMapLegend.postValue(false)
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+
     }
 
     @Composable
@@ -119,29 +172,38 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             false
         )
 
-        GoogleMap(
-            modifier = modifier,
-            cameraPositionState = cameraPositionState,
-            uiSettings = MapUiSettings(rotationGesturesEnabled = false, tiltGesturesEnabled = false, scrollGesturesEnabled = !isFetchingData),
-            properties = MapProperties(
-                isMyLocationEnabled = isLocationAccessGranted,
-                latLngBoundsForCameraTarget = MapConstants.HKBoundary,
-                minZoomPreference = mapViewModel.mapMinZoomLevel,
-                maxZoomPreference = mapViewModel.mapMaxZoomLevel),
-            onMapLoaded = {
-                        mapViewModel.updateRainfallDataSet()
-                    }
-        ) {
+        Box(modifier = modifier){
+            GoogleMap(
+                modifier = modifier,
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(rotationGesturesEnabled = false, tiltGesturesEnabled = false, scrollGesturesEnabled = !isFetchingData),
+                properties = MapProperties(
+                    isMyLocationEnabled = isLocationAccessGranted,
+                    latLngBoundsForCameraTarget = MapConstants.HKBoundary,
+                    minZoomPreference = MapConstants.mapMinZoomLevel,
+                    maxZoomPreference = MapConstants.mapMaxZoomLevel),
+                onMapLoaded = {
+                    mapViewModel.updateRainfallDataSet()
+                }
+            ) {
 
-            Polygon(points = MapConstants.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
+                Polygon(points = MapConstants.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
 
-            for (data in displayedDataSet.values) {
-                val color = getTileColor(data) ?: continue
+                for (data in displayedDataSet.values) {
+                    val color = data.rainfall.getRainfallTileColor() ?: continue
 
-                Polygon(points = data.tilePolygonPoints(), fillColor = color, strokeWidth = 0f)
+                    Polygon(points = data.tilePolygonPoints(), fillColor = color, strokeWidth = 0f)
 
+                }
+            }
+
+            Button(onClick = {
+                mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
+            }) {
+                Text(text = "ⓘ Legend")
             }
         }
+
     }
 
 
@@ -152,24 +214,70 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             ""
         )
 
+        val showTimeMenu : Boolean by mapViewModel.showTimeMenu.observeAsState(
+            false
+        )
+
+        val buttonTitle = selectedDateTimeString.getNiceFormattedTimeStringFromDatetimeString()
+
+        if(!selectedDateTimeString.isNullOrEmpty() &&
+        !buttonTitle.isNullOrEmpty()) {
+            Row(horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = modifier) {
+
+                Text("Show rainfall nowcast on map at: ")
+
+                Box () {
+                    Button(onClick = {
+                        mapViewModel.showTimeMenu.postValue(true)
+                    }) {
+
+                        Text(buttonTitle, fontSize = 24.sp)
+                    }
+
+                    DropdownMenu(expanded = showTimeMenu, onDismissRequest = {
+                        mapViewModel.showTimeMenu.postValue(false)
+                    }) {
+                        for (dateTime in mapViewModel.sortedDatetimeString) {
+                            DropdownMenuItem(onClick = {
+                                mapViewModel.updateDisplayedDataMap(dateTime)
+                                mapViewModel.showTimeMenu.postValue(false)
+                            }) {
+                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "")
+                            }
+                        }
+                    }
+                }
+            }
+
+
+        }
+    }
+    @Composable
+    fun dataStatusBar(modifier: Modifier) {
         val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
             false
         )
 
-        Row(horizontalArrangement = Arrangement.Center, modifier = modifier) {
+        val lastUpdateTimestamp : Date? by mapViewModel.lastUpdateTimestamp.observeAsState(
+            null
+        )
 
-            for(dateTime in mapViewModel.sortedDatetimeString) {
-                Button(
-                    onClick = {
-                        mapViewModel.updateDisplayedDataMap(dateTime)
+        val rainfallDataSet : RainfallDataSet by mapViewModel.rainfallDataSet.observeAsState(
+            mutableMapOf()
+        )
 
-                    }, colors = ButtonDefaults.textButtonColors(
-                        backgroundColor = if(dateTime == selectedDateTimeString)  Color.Blue else Color.White
-                    )
-                ) {
-                    Text(dateTime.substring(dateTime.length -  4 , dateTime.length ),
-                        color =  if(dateTime == selectedDateTimeString)  Color.White else Color.Blue )
-                }
+        Row(modifier = modifier,
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically) {
+            if (isFetchingData){
+                Text(text = "Fetching data...")
+            } else if (lastUpdateTimestamp != null
+                  && rainfallDataSet.isNotEmpty()) {
+                Text(text = "Last Update: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(lastUpdateTimestamp)}")
+            } else {
+                Text(text = "Failed to fetch data")
             }
 
             if(!isFetchingData) {
@@ -180,31 +288,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 }
             }
         }
-    }
-
-    fun getTileColor(data: RainfallData) : Color? {
-
-        if (data.rainfall > 20) {
-            return Color(0x48FF0000)
-        }
-
-        if (data.rainfall > 10) {
-            return Color(0x48FF8000)
-        }
-
-        if (data.rainfall > 5) {
-            return Color(0x48FFFF00)
-        }
-
-        if (data.rainfall > 2.5) {
-            return Color(0x4800FF00)
-        }
-
-        if (data.rainfall > 0.5) {
-            return Color(0x480000FF)
-        }
-
-        return null
     }
 
 }
