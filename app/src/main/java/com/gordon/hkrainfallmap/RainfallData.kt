@@ -1,6 +1,7 @@
 package com.gordon.hkrainfallmap
 
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import java.util.Date
 
 class RainfallData(val updateTimeString: String, val forecastTimestring: String, val lat: Double, val lng: Double, val rainfall: Double) {
@@ -22,6 +23,11 @@ class RainfallData(val updateTimeString: String, val forecastTimestring: String,
 
 
         return list
+    }
+
+    fun contain(location : LatLng) : Boolean {
+        val boundary = LatLngBounds(LatLng(position.latitude - 0.01f, position.longitude - 0.01f), LatLng(position.latitude + 0.01f, position.longitude + 0.01f))
+        return  boundary.contains(location)
     }
 
     companion object {

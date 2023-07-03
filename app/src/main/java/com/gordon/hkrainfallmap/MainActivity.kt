@@ -1,9 +1,9 @@
 package com.gordon.hkrainfallmap
 
 import android.Manifest
-import android.content.pm.PackageManager
-import android.graphics.Paint.Style
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
@@ -30,33 +29,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.google.android.gms.maps.LocationSource
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.MapsInitializer
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.gordon.hkrainfallmap.ui.theme.HKRainfallMapTheme
-
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-
 import com.google.maps.android.compose.*
-import java.text.DateFormat
+import com.gordon.hkrainfallmap.ui.theme.HKRainfallMapTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     val mapViewModel : MapViewModel = MapViewModel()
 
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            mapViewModel.updateCurrentLocation(LatLng(result.lastLocation.latitude, result.lastLocation.longitude))
+        }
+
+        override fun onLocationAvailability(availability: LocationAvailability) {
+
+        }
+    }
+
+    @SuppressLint("MissingPermission")
     val locationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         when {
             granted -> {
                 print("granted")
                 mapViewModel.isLocationAccessGranted.postValue(true)
+
+                val locationRequest = LocationRequest.create().setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+
+                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+
             }
             !shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
                 print("do not show again")
@@ -72,6 +87,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         MapsInitializer.initialize(getApplicationContext())
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
         locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 
         setContent {
@@ -84,7 +101,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                     Box(contentAlignment = Alignment.Center) {
                         Column(verticalArrangement = Arrangement.Top) {
-                            rainfallMap(modifier = Modifier.weight(6f, fill = true))
+
+                            rainfallRangeRow(modifier = Modifier
+                                .weight(1f, fill = true)
+                                .fillMaxWidth())
+
+                            rainfallMap(modifier = Modifier.weight(8f, fill = true))
                             predictionTimeSwitch( modifier = Modifier
                                 .weight(1f, fill = true)
                                 .fillMaxWidth())
@@ -92,12 +114,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 .weight(1f, fill = true)
                                 .fillMaxWidth())
 
-                            val isLocationAccessGranted : Boolean by mapViewModel.isLocationAccessGranted.observeAsState(
-                                false
+
+                            val location : LatLng? by mapViewModel.location.observeAsState(
+                                null
                             )
-                            
-                            if(isLocationAccessGranted){
-                                Text(text = "Location access granted")
+
+                            if (location != null) {
+                                Text("Location: ${location!!.latitude} ${location!!.longitude}")
                             }
                         
                         
@@ -136,11 +159,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             },
             text = {
                 Column() {
-                    Text("0.5mm - 2.5mm", style = TextStyle(background = MapConstants.blueTileColor))
-                    Text("2.5mm - 5mm  ", style = TextStyle(background = MapConstants.greenTileColor))
-                    Text("5mm - 10mm   ", style = TextStyle(background = MapConstants.yellowTileColor))
-                    Text("10mm - 20mm  ", style = TextStyle(background = MapConstants.orangeTileColor))
-                    Text("20mm+        ", style = TextStyle(background = MapConstants.redTileColor))
+                    Text("0.5mm - 2.5mm", style = TextStyle(background = MapConstants.blueTileColor), fontSize = 20.sp)
+                    Text("2.5mm - 5mm  ", style = TextStyle(background = MapConstants.greenTileColor), fontSize = 20.sp)
+                    Text("5mm - 10mm   ", style = TextStyle(background = MapConstants.yellowTileColor), fontSize = 20.sp)
+                    Text("10mm - 20mm  ", style = TextStyle(background = MapConstants.orangeTileColor), fontSize = 20.sp)
+                    Text("20mm+        ", style = TextStyle(background = MapConstants.redTileColor), fontSize = 20.sp)
                 }
             },
             confirmButton = {
@@ -233,7 +256,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         mapViewModel.showTimeMenu.postValue(true)
                     }) {
 
-                        Text(buttonTitle, fontSize = 24.sp)
+                        Text("🕑 $buttonTitle", fontSize = 20.sp)
                     }
 
                     DropdownMenu(expanded = showTimeMenu, onDismissRequest = {
@@ -244,7 +267,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 mapViewModel.updateDisplayedDataMap(dateTime)
                                 mapViewModel.showTimeMenu.postValue(false)
                             }) {
-                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "")
+                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "", fontSize = 20.sp)
                             }
                         }
                     }
@@ -260,7 +283,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             false
         )
 
-        val lastUpdateTimestamp : Date? by mapViewModel.lastUpdateTimestamp.observeAsState(
+        val lastUpdateTimestamp : Date? by mapViewModel.lastRainfallDataUpdateTimestamp.observeAsState(
             null
         )
 
@@ -284,12 +307,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Button(onClick = {
                     mapViewModel.updateRainfallDataSet()
                 }) {
-                    Text(text = "Reload")
+                    Text(text = "↻ Reload", fontSize = 20.sp)
                 }
             }
         }
     }
 
+    @Composable
+    fun rainfallRangeRow(modifier: Modifier) {
+        val currentLocationRainfallRange : RainfallRange? by mapViewModel.currentLocationRainFallRange.observeAsState(
+            null
+        )
+
+        if(currentLocationRainfallRange != null) {
+            Text(text = "Rainfall of your location in the coming 2 hours: \n ${currentLocationRainfallRange!!.first}mm - ${currentLocationRainfallRange!!.second}mm ")
+        }
+
+    }
 }
 
 
