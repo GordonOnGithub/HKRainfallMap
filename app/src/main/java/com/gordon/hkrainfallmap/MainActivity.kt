@@ -7,12 +7,16 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
@@ -28,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -54,9 +60,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             mapViewModel.updateCurrentLocation(LatLng(result.lastLocation.latitude, result.lastLocation.longitude))
+            mapViewModel.locationEnabled.value = true
         }
 
         override fun onLocationAvailability(availability: LocationAvailability) {
+            mapViewModel.locationEnabled.value = availability.isLocationAvailable
 
         }
     }
@@ -65,31 +73,38 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     val locationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         when {
             granted -> {
-                print("granted")
                 mapViewModel.isLocationAccessGranted.postValue(true)
-
                 val locationRequest = LocationRequest.create().setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-
                 fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
 
             }
             !shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
-                print("do not show again")
+                mapViewModel.isLocationAccessGranted.postValue(false)
             }
             else -> {
-                print("denied")
+                mapViewModel.isLocationAccessGranted.postValue(false)
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val lastRainfallDataUpdateTimestamp = mapViewModel.lastRainfallDataUpdateTimestamp.value ?: return
+        if (Date().time - lastRainfallDataUpdateTimestamp.time > MapConstants.rainfallDataRefreshInterval) {
+            mapViewModel.updateRainfallDataSet()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        MapsInitializer.initialize(getApplicationContext())
+        MapsInitializer.initialize(applicationContext)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+
 
         setContent {
             HKRainfallMapTheme {
@@ -110,20 +125,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             predictionTimeSwitch( modifier = Modifier
                                 .weight(1f, fill = true)
                                 .fillMaxWidth())
-                            dataStatusBar(modifier = Modifier
-                                .weight(1f, fill = true)
-                                .fillMaxWidth())
 
 
-                            val location : LatLng? by mapViewModel.location.observeAsState(
+                            val lastUpdateTimestamp : Date? by mapViewModel.lastRainfallDataUpdateTimestamp.observeAsState(
                                 null
                             )
-
-                            if (location != null) {
-                                Text("Location: ${location!!.latitude} ${location!!.longitude}")
+                            Row(modifier = Modifier.height(30.dp)){
+                                if (lastUpdateTimestamp != null) {
+                                    Text(text = "Last Update: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(lastUpdateTimestamp)}", modifier = Modifier.padding(5.dp))
+                                }
                             }
-                        
-                        
                         }
 
                         val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
@@ -137,7 +148,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                         val showMapLegend : Boolean by mapViewModel.showMapLegend.observeAsState(
                             false
                         )
-                        
+
                         if (showMapLegend) {
                             mapLegendDialog()
                         }
@@ -158,12 +169,23 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Text("Half-hourly Nowcast Accumulated Rainfall (mm)")
             },
             text = {
-                Column() {
-                    Text("0.5mm - 2.5mm", style = TextStyle(background = MapConstants.blueTileColor), fontSize = 20.sp)
-                    Text("2.5mm - 5mm  ", style = TextStyle(background = MapConstants.greenTileColor), fontSize = 20.sp)
-                    Text("5mm - 10mm   ", style = TextStyle(background = MapConstants.yellowTileColor), fontSize = 20.sp)
-                    Text("10mm - 20mm  ", style = TextStyle(background = MapConstants.orangeTileColor), fontSize = 20.sp)
-                    Text("20mm+        ", style = TextStyle(background = MapConstants.redTileColor), fontSize = 20.sp)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.width(160.dp)) {
+
+                    Row(modifier = Modifier.background(MapConstants.blueTileColor)){
+                        Text("0.5mm - 2.5mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                    }
+                    Row(modifier = Modifier.background(MapConstants.greenTileColor)){
+                        Text("2.5mm - 5mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                    }
+                    Row(modifier = Modifier.background(MapConstants.yellowTileColor)){
+                        Text("5mm - 10mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                    }
+                    Row(modifier = Modifier.background(MapConstants.orangeTileColor)){
+                        Text("10mm - 20mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                    }
+                    Row(modifier = Modifier.background(MapConstants.redTileColor)){
+                        Text("20mm+", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                    }
                 }
             },
             confirmButton = {
@@ -195,13 +217,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             false
         )
 
+        val locationEnabled : Boolean by mapViewModel.locationEnabled.observeAsState(initial = false)
+
         Box(modifier = modifier){
             GoogleMap(
                 modifier = modifier,
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(rotationGesturesEnabled = false, tiltGesturesEnabled = false, scrollGesturesEnabled = !isFetchingData),
                 properties = MapProperties(
-                    isMyLocationEnabled = isLocationAccessGranted,
+                    isMyLocationEnabled = isLocationAccessGranted && locationEnabled,
                     latLngBoundsForCameraTarget = MapConstants.HKBoundary,
                     minZoomPreference = MapConstants.mapMinZoomLevel,
                     maxZoomPreference = MapConstants.mapMaxZoomLevel),
@@ -222,7 +246,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
             Button(onClick = {
                 mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
-            }) {
+            }, modifier = Modifier.padding(10.dp)) {
                 Text(text = "ⓘ Legend")
             }
         }
@@ -241,73 +265,40 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             false
         )
 
+        val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
+            false
+        )
+
         val buttonTitle = selectedDateTimeString.getNiceFormattedTimeStringFromDatetimeString()
 
-        if(!selectedDateTimeString.isNullOrEmpty() &&
-        !buttonTitle.isNullOrEmpty()) {
-            Row(horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = modifier) {
+        Row(horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier) {
 
-                Text("Show rainfall nowcast on map at: ")
+        if(!isFetchingData && 
+            !selectedDateTimeString.isNullOrEmpty() &&
+        !buttonTitle.isNullOrEmpty()) {
 
                 Box () {
                     Button(onClick = {
                         mapViewModel.showTimeMenu.postValue(true)
                     }) {
 
-                        Text("🕑 $buttonTitle", fontSize = 20.sp)
+                        Text("🕑 $buttonTitle", fontSize = 24.sp)
                     }
 
                     DropdownMenu(expanded = showTimeMenu, onDismissRequest = {
                         mapViewModel.showTimeMenu.postValue(false)
                     }) {
-                        for (dateTime in mapViewModel.sortedDatetimeString) {
+                        for (dateTime in mapViewModel.sortedDatetimeString.asReversed()) {
                             DropdownMenuItem(onClick = {
                                 mapViewModel.updateDisplayedDataMap(dateTime)
                                 mapViewModel.showTimeMenu.postValue(false)
                             }) {
-                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "", fontSize = 20.sp)
+                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "", fontSize = 24.sp)
                             }
                         }
                     }
-                }
-            }
-
-
-        }
-    }
-    @Composable
-    fun dataStatusBar(modifier: Modifier) {
-        val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
-            false
-        )
-
-        val lastUpdateTimestamp : Date? by mapViewModel.lastRainfallDataUpdateTimestamp.observeAsState(
-            null
-        )
-
-        val rainfallDataSet : RainfallDataSet by mapViewModel.rainfallDataSet.observeAsState(
-            mutableMapOf()
-        )
-
-        Row(modifier = modifier,
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically) {
-            if (isFetchingData){
-                Text(text = "Fetching data...")
-            } else if (lastUpdateTimestamp != null
-                  && rainfallDataSet.isNotEmpty()) {
-                Text(text = "Last Update: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(lastUpdateTimestamp)}")
-            } else {
-                Text(text = "Failed to fetch data")
-            }
-
-            if(!isFetchingData) {
-                Button(onClick = {
-                    mapViewModel.updateRainfallDataSet()
-                }) {
-                    Text(text = "↻ Reload", fontSize = 20.sp)
                 }
             }
         }
@@ -319,10 +310,63 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             null
         )
 
-        if(currentLocationRainfallRange != null) {
-            Text(text = "Rainfall of your location in the coming 2 hours: \n ${currentLocationRainfallRange!!.first}mm - ${currentLocationRainfallRange!!.second}mm ")
-        }
+        val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
+            false
+        )
 
+        val location : LatLng? by mapViewModel.location.observeAsState(
+            null
+        )
+
+        val isLocationAccessGranted : Boolean by mapViewModel.isLocationAccessGranted.observeAsState(
+            false
+        )
+
+        val locationEnabled : Boolean by mapViewModel.locationEnabled.observeAsState(initial = false)
+
+        val lastUpdateTimestamp : Date? by mapViewModel.lastRainfallDataUpdateTimestamp.observeAsState(
+            null
+        )
+
+        val displayedDataSet : LatLngRainfallDataMap by mapViewModel.displayedRainfallDataMap.observeAsState(
+            mutableMapOf()
+        )
+        Column(modifier = Modifier
+            .padding(10.0.dp)
+            .height(60.dp)) {
+            if(isFetchingData) {
+                Text(text = "Fetching data...", fontSize = 20.sp)
+            } else if ( displayedDataSet.isEmpty() && lastUpdateTimestamp != null){
+                Row {
+                    Text(text = "Failed to fetch data", fontSize = 20.sp, modifier = Modifier
+                        .weight(4f, fill = true))
+                    Button(onClick = {
+                        mapViewModel.updateRainfallDataSet()
+                    }, modifier = Modifier.weight(1f)) {
+                        Text(text = "Retry")
+                    }
+                }
+            } else if (!isLocationAccessGranted) {
+                Text(text = "No permission to get location.", fontSize = 20.sp)
+            } else if (location == null || !locationEnabled) {
+                Text(text = "Current location is not available.",  fontSize = 20.sp)
+            } else if(currentLocationRainfallRange != null) {
+                Row {
+                    Column( modifier = Modifier.weight(3f, fill = true)) {
+                        Text(text = "Your location's rainfall in next 2 hours:",  maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${currentLocationRainfallRange!!.first}mm - ${currentLocationRainfallRange!!.second}mm ",
+                            style = TextStyle(background = currentLocationRainfallRange?.second?.getRainfallTileColor() ?: Color.Transparent),
+                            fontSize = 20.sp)
+                    }
+                    Button(onClick = {
+                        mapViewModel.updateRainfallDataSet()
+                    }, modifier = Modifier.weight(1f)) {
+                        Text(text = "Refresh")
+                    }
+                }
+
+            }
+        }
     }
 }
 

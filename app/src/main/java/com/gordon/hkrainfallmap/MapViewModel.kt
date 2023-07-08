@@ -39,6 +39,8 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     val showTimeMenu : MutableLiveData<Boolean> = MutableLiveData(false)
 
+    val locationEnabled : MutableLiveData<Boolean> = MutableLiveData(true)
+
 
     private val _location : MutableLiveData<LatLng?> = MutableLiveData(null)
     val location : LiveData<LatLng?> = _location
@@ -103,9 +105,9 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
         tryFindCurrentLocationRainfallRange()
     }
 
-    fun updateCurrentLocation(location : LatLng){
-        _location.postValue(location)
-        _lastLocationUpdateTimestamp.postValue(Date())
+    fun updateCurrentLocation(location : LatLng?){
+        _location.value = location
+        _lastLocationUpdateTimestamp.value = Date()
 
         tryFindCurrentLocationRainfallRange()
 
@@ -123,7 +125,12 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     private fun tryFindRainfallRange(location: LatLng, rainfallData: RainfallDataSet) : RainfallRange? {
 
+        if(rainfallData.isEmpty()) { return  null }
+
         val firstDataSet = rainfallData.values.first().values
+        if (firstDataSet.isEmpty()) {
+            return null
+        }
 
         var dataLocation : LatLng? = null
 

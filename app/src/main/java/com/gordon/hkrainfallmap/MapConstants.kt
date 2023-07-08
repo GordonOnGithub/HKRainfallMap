@@ -33,6 +33,8 @@ class MapConstants {
 
         val redTileColor : Color = Color(0x48FF0000)
 
+        val rainfallDataRefreshInterval = 300_000 // in milliseconds
+
     }
 
 }
