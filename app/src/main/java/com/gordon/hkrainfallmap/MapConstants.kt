@@ -20,7 +20,7 @@ class MapConstants {
             LatLng(HKNorthEastLat, HKNorthEastLng), LatLng(HKNorthEastLat, HKSouthWestLng)
         )
 
-        val mapMinZoomLevel = 9.0f
+        val mapMinZoomLevel = 10.0f
         val mapMaxZoomLevel = 15.0f
 
         val blueTileColor : Color = Color(0x480000FF)

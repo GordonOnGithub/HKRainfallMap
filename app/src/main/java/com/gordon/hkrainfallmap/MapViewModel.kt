@@ -3,12 +3,23 @@ package com.gordon.hkrainfallmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Duration
 import java.util.Date
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 typealias RainfallRange = Pair<Double, Double>
 
@@ -51,9 +62,73 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
     private val _currentLocationRainFallRange : MutableLiveData<RainfallRange?> = MutableLiveData(null)
     val currentLocationRainFallRange : LiveData<RainfallRange?> = _currentLocationRainFallRange
 
+    private var rainfallDataUpdateJob : Job? = null
 
-    fun updateRainfallDataSet () {
-        _isFetchingData.postValue(true)
+    private var rainfallDataAutoplayJob : Job? = null
+
+    val autoplayRainfallData : MutableLiveData<Boolean> = MutableLiveData(false)
+
+
+    fun toggleRainfallDataAutoplay(play : Boolean){
+
+        autoplayRainfallData.value = play
+
+        rainfallDataAutoplayJob?.cancel()
+
+        if(!play) { return }
+
+        rainfallDataAutoplayJob = GlobalScope.launch {
+            TickerUtil.tickerFlow( 1.seconds).onEach {
+
+                val selectedDateTimeString = _selectedDateTimeString.value ?: return@onEach
+
+                var index = sortedDatetimeString.indexOf(selectedDateTimeString) + 1
+
+                if(index < 0 || index >= sortedDatetimeString.count()){
+                    index = 0
+                }
+
+                GlobalScope.launch {
+                    withContext(Dispatchers.Main) {
+                        updateDisplayedDataMap(sortedDatetimeString[index])
+                    }
+                }
+
+            }.cancellable().collect()
+        }
+
+    }
+
+    fun startRainfallDataUpdateTicker(){
+
+        rainfallDataUpdateJob?.cancel()
+
+        rainfallDataUpdateJob = viewModelScope.launch {
+            TickerUtil.tickerFlow( MapConstants.rainfallDataRefreshInterval.milliseconds).onEach {
+
+                updateRainfallDataSet()
+
+            }.cancellable().collect()
+        }
+
+    }
+
+    fun handleAppResume(){
+        val lastRainfallDataUpdateTimestamp = lastRainfallDataUpdateTimestamp.value ?: return
+        if (Date().time - lastRainfallDataUpdateTimestamp.time > MapConstants.rainfallDataRefreshInterval) {
+            updateRainfallDataSet()
+        }
+    }
+
+     fun updateRainfallDataSet () {
+
+        if(isFetchingData.value != false ) {
+            return
+        }
+
+         toggleRainfallDataAutoplay(false)
+
+        _isFetchingData.value = true
         apiManager.getRainfallDataSet( RainfallAPICallback(onDataReceived = {
 
             GlobalScope.launch {
@@ -71,7 +146,6 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
                     })
 
                     updateDisplayedDataMap()
-
 
                     _isFetchingData.postValue(false)
                 }
@@ -100,7 +174,6 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
         }
 
         _displayedRainfallDataMap.value = rainfallDataSet.value?.get(_selectedDateTimeString.value) ?: mutableMapOf()
-
 
         tryFindCurrentLocationRainfallRange()
     }

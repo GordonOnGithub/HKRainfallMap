@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -90,10 +91,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     override fun onResume() {
         super.onResume()
 
-        val lastRainfallDataUpdateTimestamp = mapViewModel.lastRainfallDataUpdateTimestamp.value ?: return
-        if (Date().time - lastRainfallDataUpdateTimestamp.time > MapConstants.rainfallDataRefreshInterval) {
-            mapViewModel.updateRainfallDataSet()
-        }
+        mapViewModel.handleAppResume()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,7 +120,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                                 .fillMaxWidth())
 
                             rainfallMap(modifier = Modifier.weight(8f, fill = true))
-                            predictionTimeSwitch( modifier = Modifier
+                            ForecastTimeSwitch( modifier = Modifier
                                 .weight(1f, fill = true)
                                 .fillMaxWidth())
 
@@ -172,19 +170,29 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.width(160.dp)) {
 
                     Row(modifier = Modifier.background(MapConstants.blueTileColor)){
-                        Text("0.5mm - 2.5mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                        Text("0.5mm - 2.5mm", fontSize = 20.sp, modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp))
                     }
                     Row(modifier = Modifier.background(MapConstants.greenTileColor)){
-                        Text("2.5mm - 5mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                        Text("2.5mm - 5mm", fontSize = 20.sp, modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp))
                     }
                     Row(modifier = Modifier.background(MapConstants.yellowTileColor)){
-                        Text("5mm - 10mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                        Text("5mm - 10mm", fontSize = 20.sp, modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp))
                     }
                     Row(modifier = Modifier.background(MapConstants.orangeTileColor)){
-                        Text("10mm - 20mm", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                        Text("10mm - 20mm", fontSize = 20.sp, modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp))
                     }
                     Row(modifier = Modifier.background(MapConstants.redTileColor)){
-                        Text("20mm+", fontSize = 20.sp, modifier = Modifier.fillMaxWidth().padding(5.dp))
+                        Text("20mm+", fontSize = 20.sp, modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp))
                     }
                 }
             },
@@ -230,7 +238,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     minZoomPreference = MapConstants.mapMinZoomLevel,
                     maxZoomPreference = MapConstants.mapMaxZoomLevel),
                 onMapLoaded = {
-                    mapViewModel.updateRainfallDataSet()
+                    mapViewModel.startRainfallDataUpdateTicker()
                 }
             ) {
 
@@ -247,7 +255,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Button(onClick = {
                 mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
             }, modifier = Modifier.padding(10.dp)) {
-                Text(text = "ⓘ Legend")
+                Text(text = "ℹ️ Legend")
             }
         }
 
@@ -255,7 +263,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
 
     @Composable
-    fun predictionTimeSwitch(modifier: Modifier){
+    fun ForecastTimeSwitch(modifier: Modifier){
 
         val selectedDateTimeString : String by mapViewModel.selectedDateTimeString.observeAsState(
             ""
@@ -266,6 +274,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         )
 
         val isFetchingData : Boolean by mapViewModel.isFetchingData.observeAsState(
+            false
+        )
+
+        val autoplay : Boolean by mapViewModel.autoplayRainfallData.observeAsState(
             false
         )
 
@@ -280,14 +292,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         !buttonTitle.isNullOrEmpty()) {
 
                 Box () {
+
                     Button(onClick = {
+                        if (autoplay) { return@Button }
+
                         mapViewModel.showTimeMenu.postValue(true)
                     }) {
-
                         Text("🕑 $buttonTitle", fontSize = 24.sp)
                     }
 
-                    DropdownMenu(expanded = showTimeMenu, onDismissRequest = {
+
+                    DropdownMenu(expanded = !autoplay && showTimeMenu, onDismissRequest = {
                         mapViewModel.showTimeMenu.postValue(false)
                     }) {
                         for (dateTime in mapViewModel.sortedDatetimeString.asReversed()) {
@@ -299,6 +314,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             }
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Button(onClick = {
+                    mapViewModel.toggleRainfallDataAutoplay(!autoplay)
+                }) {
+                    Text(text = (if (autoplay) "⏹️" else "▶️"), fontSize = 24.sp)
                 }
             }
         }
@@ -337,12 +360,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             if(isFetchingData) {
                 Text(text = "Fetching data...", fontSize = 20.sp)
             } else if ( displayedDataSet.isEmpty() && lastUpdateTimestamp != null){
-                Row {
-                    Text(text = "Failed to fetch data", fontSize = 20.sp, modifier = Modifier
-                        .weight(4f, fill = true))
+                Row(horizontalArrangement = Arrangement.End) {
+                    Text(text = "Failed to fetch data", fontSize = 20.sp)
+                    Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
-                    }, modifier = Modifier.weight(1f)) {
+                    }, modifier = Modifier.width(100.dp)) {
                         Text(text = "Retry")
                     }
                 }
@@ -352,15 +375,16 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Text(text = "Current location is not available.",  fontSize = 20.sp)
             } else if(currentLocationRainfallRange != null) {
                 Row {
-                    Column( modifier = Modifier.weight(3f, fill = true)) {
-                        Text(text = "Your location's rainfall in next 2 hours:",  maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Column {
+                        Text(text = "Your location's rainfall in next 2 hours: ",  maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("${currentLocationRainfallRange!!.first}mm - ${currentLocationRainfallRange!!.second}mm ",
                             style = TextStyle(background = currentLocationRainfallRange?.second?.getRainfallTileColor() ?: Color.Transparent),
                             fontSize = 20.sp)
                     }
+                    Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
-                    }, modifier = Modifier.weight(1f)) {
+                    }, modifier = Modifier.width(120.dp)) {
                         Text(text = "Refresh")
                     }
                 }
