@@ -23,15 +23,45 @@ class MapConstants {
         val mapMinZoomLevel = 10.0f
         val mapMaxZoomLevel = 15.0f
 
-        val blueTileColor : Color = Color(0x480000FF)
+        fun blueTileColor(forMap: Boolean = true) : Color {
+            return if (forMap) {
+                Color(0x480000FF)
+            }else {
+                Color(0xFF0000FF)
+            }
+        }
 
-        val greenTileColor : Color = Color(0x4800FF00)
+        fun greenTileColor(forMap: Boolean = true) : Color {
+            return if (forMap) {
+                Color(0x4800FF00)
+            }else {
+                Color(0xFF00FF00)
+            }
+        }
 
-        val yellowTileColor : Color = Color(0x48FFFF00)
+        fun yellowTileColor(forMap: Boolean = true) : Color {
+            return if (forMap) {
+                Color(0x48FFFF00)
+            }else {
+                Color(0xFFFFFF00)
+            }
+        }
 
-        val orangeTileColor : Color = Color(0x48FF8000)
+        fun orangeTileColor(forMap: Boolean = true) : Color {
+            return if (forMap) {
+                Color(0x48FF8000)
+            }else {
+                Color(0xFFFF8000)
+            }
+        }
 
-        val redTileColor : Color = Color(0x48FF0000)
+        fun redTileColor(forMap: Boolean = true) : Color {
+            return if (forMap) {
+                Color(0x48FF0000)
+            }else {
+                Color(0xFFFF0000)
+            }
+        }
 
         val rainfallDataRefreshInterval = 300_000 // in milliseconds
 

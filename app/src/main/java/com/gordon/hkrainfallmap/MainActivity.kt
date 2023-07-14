@@ -17,9 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -115,7 +119,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     Box(contentAlignment = Alignment.Center) {
                         Column(verticalArrangement = Arrangement.Top) {
 
-                            rainfallRangeRow(modifier = Modifier
+                            rainfallInfoRow(modifier = Modifier
                                 .weight(1f, fill = true)
                                 .fillMaxWidth())
 
@@ -130,7 +134,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                             )
                             Row(modifier = Modifier.height(30.dp)){
                                 if (lastUpdateTimestamp != null) {
-                                    Text(text = "Last Update: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(lastUpdateTimestamp)}", modifier = Modifier.padding(5.dp))
+                                    Text(text = "${getString(R.string.map_view_last_update_timestamp)}: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(lastUpdateTimestamp)}", modifier = Modifier.padding(5.dp))
                                 }
                             }
                         }
@@ -164,33 +168,33 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             mapViewModel.showMapLegend.postValue(false)
         },
             title = {
-                Text("Half-hourly Nowcast Accumulated Rainfall (mm)")
+                Text(getString(R.string.map_view_map_legend_detail_title))
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.width(160.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.width(180.dp)) {
 
-                    Row(modifier = Modifier.background(MapConstants.blueTileColor)){
-                        Text("0.5mm - 2.5mm", fontSize = 20.sp, modifier = Modifier
+                    Row(modifier = Modifier.background(MapConstants.blueTileColor())){
+                        Text("0.5${getString(R.string.map_view_mm)} - 2.5${getString(R.string.map_view_mm)}", fontSize = 20.sp, modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp))
                     }
-                    Row(modifier = Modifier.background(MapConstants.greenTileColor)){
-                        Text("2.5mm - 5mm", fontSize = 20.sp, modifier = Modifier
+                    Row(modifier = Modifier.background(MapConstants.greenTileColor())){
+                        Text("2.5${getString(R.string.map_view_mm)} - 5${getString(R.string.map_view_mm)}", fontSize = 20.sp, modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp))
                     }
-                    Row(modifier = Modifier.background(MapConstants.yellowTileColor)){
-                        Text("5mm - 10mm", fontSize = 20.sp, modifier = Modifier
+                    Row(modifier = Modifier.background(MapConstants.yellowTileColor())){
+                        Text("5${getString(R.string.map_view_mm)} - 10${getString(R.string.map_view_mm)}", fontSize = 20.sp, modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp))
                     }
-                    Row(modifier = Modifier.background(MapConstants.orangeTileColor)){
-                        Text("10mm - 20mm", fontSize = 20.sp, modifier = Modifier
+                    Row(modifier = Modifier.background(MapConstants.orangeTileColor())){
+                        Text("10${getString(R.string.map_view_mm)} - 20${getString(R.string.map_view_mm)}", fontSize = 20.sp, modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp))
                     }
-                    Row(modifier = Modifier.background(MapConstants.redTileColor)){
-                        Text("20mm+", fontSize = 20.sp, modifier = Modifier
+                    Row(modifier = Modifier.background(MapConstants.redTileColor())){
+                        Text("20${getString(R.string.map_view_mm)}+", fontSize = 20.sp, modifier = Modifier
                             .fillMaxWidth()
                             .padding(5.dp))
                     }
@@ -255,7 +259,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             Button(onClick = {
                 mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
             }, modifier = Modifier.padding(10.dp)) {
-                Text(text = "ℹ️ Legend")
+                Text(text = "ℹ️ ${getString(R.string.map_view_map_legend)}")
             }
         }
 
@@ -283,52 +287,78 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
         val buttonTitle = selectedDateTimeString.getNiceFormattedTimeStringFromDatetimeString()
 
-        Row(horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier) {
+        Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
 
-        if(!isFetchingData && 
-            !selectedDateTimeString.isNullOrEmpty() &&
-        !buttonTitle.isNullOrEmpty()) {
+            Row ( horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier.width(100.dp) ){
 
-                Box () {
+                for (dateTime in mapViewModel.sortedDatetimeString) {
 
-                    Button(onClick = {
-                        if (autoplay) { return@Button }
+                    val color = if (dateTime == selectedDateTimeString) Color.Blue else Color.LightGray
 
-                        mapViewModel.showTimeMenu.postValue(true)
-                    }) {
-                        Text("🕑 $buttonTitle", fontSize = 24.sp)
-                    }
+                    Box(
+                        modifier = Modifier.size(10.dp).clip(CircleShape).background(color).padding(5.dp)
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+
+                if (!isFetchingData &&
+                    !selectedDateTimeString.isNullOrEmpty() &&
+                    !buttonTitle.isNullOrEmpty()
+                ) {
+
+                    Box() {
+
+                        Button(
+                            onClick = {
+                                if (autoplay) {
+                                    return@Button
+                                }
+
+                                mapViewModel.showTimeMenu.postValue(true)
+                            },
+                            colors =ButtonDefaults.buttonColors(disabledBackgroundColor = Color.Transparent, disabledContentColor = Color.Black),
+                            enabled = !autoplay
+                        ) {
+                            Text("🕑 $buttonTitle", fontSize = 24.sp)
+                        }
 
 
-                    DropdownMenu(expanded = !autoplay && showTimeMenu, onDismissRequest = {
-                        mapViewModel.showTimeMenu.postValue(false)
-                    }) {
-                        for (dateTime in mapViewModel.sortedDatetimeString.asReversed()) {
-                            DropdownMenuItem(onClick = {
-                                mapViewModel.updateDisplayedDataMap(dateTime)
-                                mapViewModel.showTimeMenu.postValue(false)
-                            }) {
-                                Text(dateTime.getNiceFormattedTimeStringFromDatetimeString() ?: "", fontSize = 24.sp)
+                        DropdownMenu(expanded = !autoplay && showTimeMenu, onDismissRequest = {
+                            mapViewModel.showTimeMenu.postValue(false)
+                        }) {
+                            for (dateTime in mapViewModel.sortedDatetimeString.asReversed()) {
+                                DropdownMenuItem(onClick = {
+                                    mapViewModel.updateDisplayedDataMap(dateTime)
+                                    mapViewModel.showTimeMenu.postValue(false)
+                                }) {
+                                    Text(
+                                        dateTime.getNiceFormattedTimeStringFromDatetimeString()
+                                            ?: "", fontSize = 24.sp
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                Button(onClick = {
-                    mapViewModel.toggleRainfallDataAutoplay(!autoplay)
-                }) {
-                    Text(text = (if (autoplay) "⏹️" else "▶️"), fontSize = 24.sp)
+                    Button(onClick = {
+                        mapViewModel.toggleRainfallDataAutoplay(!autoplay)
+                    }) {
+                        Text(text = (if (autoplay) "⏹️" else "▶️"), fontSize = 24.sp)
+                    }
                 }
             }
         }
     }
 
     @Composable
-    fun rainfallRangeRow(modifier: Modifier) {
+    fun rainfallInfoRow(modifier: Modifier) {
         val currentLocationRainfallRange : RainfallRange? by mapViewModel.currentLocationRainFallRange.observeAsState(
             null
         )
@@ -358,26 +388,26 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             .padding(10.0.dp)
             .height(60.dp)) {
             if(isFetchingData) {
-                Text(text = "Fetching data...", fontSize = 20.sp)
+                Text(text = getString(R.string.map_view_fetching_data), fontSize = 20.sp)
             } else if ( displayedDataSet.isEmpty() && lastUpdateTimestamp != null){
                 Row(horizontalArrangement = Arrangement.End) {
-                    Text(text = "Failed to fetch data", fontSize = 20.sp)
+                    Text(text = getString(R.string.map_view_fetch_data_failed), fontSize = 20.sp)
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
                     }, modifier = Modifier.width(100.dp)) {
-                        Text(text = "Retry")
+                        Text(text = getString(R.string.map_view_retry_fetching))
                     }
                 }
             } else if (!isLocationAccessGranted) {
-                Text(text = "No permission to get location.", fontSize = 20.sp)
+                Text(text = getString(R.string.map_view_location_permission_denied), fontSize = 20.sp)
             } else if (location == null || !locationEnabled) {
-                Text(text = "Current location is not available.",  fontSize = 20.sp)
+                Text(text = getString(R.string.map_view_location_unavailable),  fontSize = 20.sp)
             } else if(currentLocationRainfallRange != null) {
                 Row {
                     Column {
-                        Text(text = "Your location's rainfall in next 2 hours: ",  maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${currentLocationRainfallRange!!.first}mm - ${currentLocationRainfallRange!!.second}mm ",
+                        Text(text = getString(R.string.map_view_rainfall_in_next_2_hours),  maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${currentLocationRainfallRange!!.first}${getString(R.string.map_view_mm)} - ${currentLocationRainfallRange!!.second}${getString(R.string.map_view_mm)} ",
                             style = TextStyle(background = currentLocationRainfallRange?.second?.getRainfallTileColor() ?: Color.Transparent),
                             fontSize = 20.sp)
                     }
@@ -385,7 +415,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
                     }, modifier = Modifier.width(120.dp)) {
-                        Text(text = "Refresh")
+                        Text(text = getString(R.string.map_view_refresh_data))
                     }
                 }
 

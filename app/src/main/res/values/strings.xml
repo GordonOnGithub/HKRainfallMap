@@ -1,3 +1,15 @@
 <resources>
+    <string name="map_view.location_permission_denied">Location permission denied.</string>
+    <string name="map_view.location_unavailable">Current location is not available.</string>
+    <string name="map_view.rainfall_in_next_2_hours">Your location\'s rainfall in next 2 hours: </string>
+    <string name="map_view.fetching_data">Fetching data...</string>
+    <string name="map_view.fetch_data_failed">Failed to Fetch data</string>
+    <string name="map_view.refresh_data">Refresh</string>
+    <string name="map_view.retry_fetching">Retry</string>
+    <string name="map_view.map_legend">Legend</string>
+    <string name="map_view.map_legend_detail_title">Half-hourly Nowcast Accumulated Rainfall (mm)</string>
+    <string name="map_view.last_update_timestamp">Last Update</string>
+    <string name="map_view.mm">mm</string>
     <string name="app_name">HK Rainfall Map</string>
+
 </resources>

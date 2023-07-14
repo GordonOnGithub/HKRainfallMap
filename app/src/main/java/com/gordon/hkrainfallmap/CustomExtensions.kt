@@ -4,23 +4,23 @@ import androidx.compose.ui.graphics.Color
 
 fun Double.getRainfallTileColor() : Color? {
     if (this >= 20) {
-        return MapConstants.redTileColor
+        return MapConstants.redTileColor()
     }
 
     if (this >= 10) {
-        return MapConstants.orangeTileColor
+        return MapConstants.orangeTileColor()
     }
 
     if (this >= 5) {
-        return MapConstants.yellowTileColor
+        return MapConstants.yellowTileColor()
     }
 
     if (this >= 2.5) {
-        return MapConstants.greenTileColor
+        return MapConstants.greenTileColor()
     }
 
     if (this >= 0.5) {
-        return MapConstants.blueTileColor
+        return MapConstants.blueTileColor()
     }
 
     return null

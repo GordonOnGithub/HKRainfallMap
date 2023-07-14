@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="map_view.location_permission_denied">未有取得定位的權限</string>
+    <string name="map_view.location_unavailable">未能獲取當前位置</string>
+    <string name="map_view.rainfall_in_next_2_hours">你的位置未來兩小時內的降雨量預測：</string>
+    <string name="map_view.fetching_data">正在更新降雨量資料 ...</string>
+    <string name="map_view.fetch_data_failed">未能更新降雨量資料</string>
+    <string name="map_view.refresh_data">更新</string>
+    <string name="map_view.retry_fetching">重試</string>
+    <string name="map_view.map_legend">圖例</string>
+    <string name="map_view.map_legend_detail_title">臨近預測半小時累計雨量 （毫米）</string>
+    <string name="map_view.last_update_timestamp">最後更新</string>
+    <string name="map_view.mm">毫米</string>
+    <string name="app_name">香港降雨地圖</string>
+</resources>
