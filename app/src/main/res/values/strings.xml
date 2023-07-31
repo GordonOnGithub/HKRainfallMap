@@ -11,5 +11,6 @@
     <string name="map_view.last_update_timestamp">Last Update</string>
     <string name="map_view.mm">mm</string>
     <string name="app_name">HK Rainfall Map</string>
+    <string name="map_view.grant_location_permission">Grant Permission</string>
 
 </resources>

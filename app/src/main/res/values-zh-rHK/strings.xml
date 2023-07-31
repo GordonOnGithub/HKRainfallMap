@@ -12,4 +12,5 @@
     <string name="map_view.last_update_timestamp">最後更新</string>
     <string name="map_view.mm">毫米</string>
     <string name="app_name">香港降雨地圖</string>
+    <string name="map_view.grant_location_permission">允許權限</string>
 </resources>

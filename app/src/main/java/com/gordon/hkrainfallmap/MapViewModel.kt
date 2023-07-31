@@ -68,6 +68,15 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     val autoplayRainfallData : MutableLiveData<Boolean> = MutableLiveData(false)
 
+    private val _weatherWarningDataList : MutableLiveData<List<WeatherWarningData>> = MutableLiveData(
+        mutableListOf()
+    )
+    val weatherWarningDataList : LiveData<List<WeatherWarningData>> = _weatherWarningDataList
+
+    private val _isFetchingWeatherWarningData : MutableLiveData<Boolean> = MutableLiveData(false)
+    val isFetchingWeatherWarningData : LiveData<Boolean> = _isFetchingWeatherWarningData
+
+    val showWeatherWarningSummary : MutableLiveData<Boolean> = MutableLiveData(false)
 
     fun toggleRainfallDataAutoplay(play : Boolean){
 
@@ -148,6 +157,8 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
                     updateDisplayedDataMap()
 
                     _isFetchingData.postValue(false)
+
+                    updateWeatherWarningDataSet()
                 }
             }
 
@@ -164,6 +175,29 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
             }
         })
 
+    }
+
+    fun updateWeatherWarningDataSet(){
+        if (_isFetchingWeatherWarningData.value != false) return
+
+        _isFetchingWeatherWarningData.value = true
+
+        apiManager.getWeatherWarningDataSet(callback = WeatherWarningAPICallback(onDataReceived = {
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) {
+                    _weatherWarningDataList.value = it
+                    _isFetchingWeatherWarningData.value = false
+                }
+            }
+        }) {
+            // failure
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) {
+
+                    _isFetchingWeatherWarningData.value = false
+                }
+            }
+        })
     }
 
     fun updateDisplayedDataMap(datetimeString : String? = null){

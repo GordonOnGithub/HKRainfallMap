@@ -25,7 +25,7 @@ class MapConstants {
 
         fun blueTileColor(forMap: Boolean = true) : Color {
             return if (forMap) {
-                Color(0x480000FF)
+                Color(0x640000FF)
             }else {
                 Color(0xFF0000FF)
             }
@@ -33,7 +33,7 @@ class MapConstants {
 
         fun greenTileColor(forMap: Boolean = true) : Color {
             return if (forMap) {
-                Color(0x4800FF00)
+                Color(0x6400FF00)
             }else {
                 Color(0xFF00FF00)
             }
@@ -41,7 +41,7 @@ class MapConstants {
 
         fun yellowTileColor(forMap: Boolean = true) : Color {
             return if (forMap) {
-                Color(0x48FFFF00)
+                Color(0x64FFFF00)
             }else {
                 Color(0xFFFFFF00)
             }
@@ -49,7 +49,7 @@ class MapConstants {
 
         fun orangeTileColor(forMap: Boolean = true) : Color {
             return if (forMap) {
-                Color(0x48FF8000)
+                Color(0x64FF8000)
             }else {
                 Color(0xFFFF8000)
             }
@@ -57,7 +57,7 @@ class MapConstants {
 
         fun redTileColor(forMap: Boolean = true) : Color {
             return if (forMap) {
-                Color(0x48FF0000)
+                Color(0x64FF0000)
             }else {
                 Color(0xFFFF0000)
             }
