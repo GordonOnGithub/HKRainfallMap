@@ -437,6 +437,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 Text(text = getString(R.string.map_view_location_permission_denied), fontSize = 20.sp)
             } else if (location == null || !locationEnabled) {
                 Text(text = getString(R.string.map_view_location_unavailable),  fontSize = 20.sp)
+            } else if ( !MapConstants.HKBoundary.contains(location ?: LatLng(0.0,0.0))) {
+                Text(text = getString(R.string.map_view_location_out_of_boundary),  fontSize = 20.sp)
             } else if(currentLocationRainfallRange != null) {
                 Row {
                     Column (modifier = Modifier.padding(5.dp)){
@@ -472,7 +474,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 .fillMaxWidth()
                 ){
 
-                Text(text = weatherWarningDataList.summary() ?: "",
+                Text(text = weatherWarningDataList.summary(applicationContext) ?: "",
                     modifier = Modifier.padding(10.dp).clickable {
                         mapViewModel.showWeatherWarningSummary.postValue(true)
                     })
@@ -492,7 +494,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             mapViewModel.showWeatherWarningSummary.postValue(false)
         },
             title = {
-                Text("Weather Warning(s) in force:")
+                Text(getString(R.string.map_view_weather_warning_prefix))
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -501,7 +503,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
                         Row() {
                             Text(
-                                warning.description(),
+                                warning.description(applicationContext),
                                 fontSize = 20.sp,
                                 modifier = Modifier
                                     .fillMaxWidth()

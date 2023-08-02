@@ -13,4 +13,18 @@
     <string name="map_view.mm">毫米</string>
     <string name="app_name">香港降雨地圖</string>
     <string name="map_view.grant_location_permission">允許權限</string>
+    <string name="map_view.weather_warning.prefix">天氣警告：</string>
+    <string name="map_view.weather_warning.suffix">以及另外%d個警告</string>
+    <string name="map_view_location_out_of_boundary">沒有目前位置的雨量資料</string>
+    <string name="weather_warning_code.red_rain">紅色</string>
+    <string name="weather_warning_code.amber_rain">黃色</string>
+    <string name="weather_warning_code.black_rain">黑色</string>
+    <string name="weather_warning_code.tc1">一號</string>
+    <string name="weather_warning_code.tc3">三號</string>
+    <string name="weather_warning_code.tc8ne">八號（東北）</string>
+    <string name="weather_warning_code.tc8se">八號（東南）</string>
+    <string name="weather_warning_code.tc8sw">八號（西南）</string>
+    <string name="weather_warning_code.tc8nw">八號（西北）</string>
+    <string name="weather_warning_code.tc9">九號</string>
+    <string name="weather_warning_code.tc10">十號</string>
 </resources>

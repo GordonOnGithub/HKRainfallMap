@@ -12,5 +12,19 @@
     <string name="map_view.mm">mm</string>
     <string name="app_name">HK Rainfall Map</string>
     <string name="map_view.grant_location_permission">Grant Permission</string>
+    <string name="map_view.weather_warning.prefix">Weather Warning(s) in force:</string>
+    <string name="map_view.weather_warning.suffix">and %d other warning(s)</string>
+    <string name="map_view_location_out_of_boundary">Your location is not in supported area</string>
+    <string name="weather_warning_code.red_rain">"Red "</string>
+    <string name="weather_warning_code.amber_rain">"Amber "</string>
+    <string name="weather_warning_code.black_rain">"Black "</string>
+    <string name="weather_warning_code.tc1">"No. 1 "</string>
+    <string name="weather_warning_code.tc3">"No. 3 "</string>
+    <string name="weather_warning_code.tc8ne">"No. 8 North East "</string>
+    <string name="weather_warning_code.tc8se">"No. 8 South East "</string>
+    <string name="weather_warning_code.tc8sw">"No. 8 South West "</string>
+    <string name="weather_warning_code.tc8nw">"No. 8 North West "</string>
+    <string name="weather_warning_code.tc9">"No. 9 "</string>
+    <string name="weather_warning_code.tc10">"No. 10 "</string>
 
 </resources>

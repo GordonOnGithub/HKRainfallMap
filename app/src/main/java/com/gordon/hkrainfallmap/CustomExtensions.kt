@@ -1,5 +1,7 @@
 package com.gordon.hkrainfallmap
 
+import android.app.Application
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 
 fun Double.getRainfallTileColor() : Color? {
@@ -62,7 +64,7 @@ fun String.getNiceFormattedDateTimeStringFromDatetimeString() : String? {
 
 }
 
-fun List<WeatherWarningData>.summary(): String?{
+fun List<WeatherWarningData>.summary(context : Context): String?{
 
     if (this.isNullOrEmpty()) { return  "" }
 
@@ -71,13 +73,13 @@ fun List<WeatherWarningData>.summary(): String?{
 
     if (filteredSelf.isNullOrEmpty()) { return  "" }
 
-    val first = filteredSelf.first().description()
+    val first = filteredSelf.first().description(context)
 
     val otherWarningCount = filteredSelf.count() - 1
 
     val otherWarningLabel =
-        if(otherWarningCount > 0) " & " + "$otherWarningCount" + " other warnings "
+        if(otherWarningCount > 0) String.format( context.getString(R.string.map_view_weather_warning_suffix), otherWarningCount)
     else ""
 
-    return "Warning in force: $first$otherWarningLabel"
+    return "${context.getString(R.string.map_view_weather_warning_prefix)} $first $otherWarningLabel"
 }
