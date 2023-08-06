@@ -10,7 +10,7 @@
     <string name="map_view.map_legend_detail_title">Half-hourly Nowcast Accumulated Rainfall (mm)</string>
     <string name="map_view.last_update_timestamp">Last Update</string>
     <string name="map_view.mm">mm</string>
-    <string name="app_name">HK Rainfall Map</string>
+    <string name="app_name">HK Rainfall Nowcast Map</string>
     <string name="map_view.grant_location_permission">Grant Permission</string>
     <string name="map_view.weather_warning.prefix">Weather Warning(s) in force:</string>
     <string name="map_view.weather_warning.suffix">and %d other warning(s)</string>
@@ -26,5 +26,12 @@
     <string name="weather_warning_code.tc8nw">"No. 8 North West "</string>
     <string name="weather_warning_code.tc9">"No. 9 "</string>
     <string name="weather_warning_code.tc10">"No. 10 "</string>
+    <string name="setting.rate_app">Rate This App</string>
+    <string name="setting.about_app">About This App</string>
+    <string name="back_button">Back</string>
+    <string name="about_this_app.data_source">Data source: Hong Kong Observatory (via data.gov.hk)</string>
+    <string name="about_this_app.developer_github">Developer\'s Github</string>
+    <string name="about_this_app.app_version">App Version:</string>
+    <string name="map_view.top_bar_title">HK Rainfall Nowcast Map</string>
 
 </resources>

@@ -11,9 +11,9 @@
     <string name="map_view.map_legend_detail_title">臨近預測半小時累計雨量 （毫米）</string>
     <string name="map_view.last_update_timestamp">最後更新</string>
     <string name="map_view.mm">毫米</string>
-    <string name="app_name">香港降雨地圖</string>
+    <string name="app_name">香港降雨預報地圖</string>
     <string name="map_view.grant_location_permission">允許權限</string>
-    <string name="map_view.weather_warning.prefix">天氣警告：</string>
+    <string name="map_view.weather_warning.prefix">目前天氣警告：</string>
     <string name="map_view.weather_warning.suffix">以及另外%d個警告</string>
     <string name="map_view_location_out_of_boundary">沒有目前位置的雨量資料</string>
     <string name="weather_warning_code.red_rain">紅色</string>
@@ -27,4 +27,11 @@
     <string name="weather_warning_code.tc8nw">八號（西北）</string>
     <string name="weather_warning_code.tc9">九號</string>
     <string name="weather_warning_code.tc10">十號</string>
+    <string name="setting.rate_app">評價此應用程式</string>
+    <string name="setting.about_app">關於此應用程式</string>
+    <string name="back_button">返回</string>
+    <string name="about_this_app.data_source">資料來源：香港天文台（經 data.gov.hk）</string>
+    <string name="about_this_app.developer_github">"開發者的GitHub "</string>
+    <string name="about_this_app.app_version">程式版本：</string>
+    <string name="map_view.top_bar_title">香港降雨預報地圖</string>
 </resources>

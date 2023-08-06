@@ -70,7 +70,7 @@ class MockAPIManager : APIManagerType {
     }
 
     override fun getWeatherWarningDataSet( callback: WeatherWarningAPICallback){
-        // TODO
+
         val fileContent = this::class.java.classLoader
             .getResource("mock_warning_data.json")?.readText()
 

@@ -81,5 +81,5 @@ fun List<WeatherWarningData>.summary(context : Context): String?{
         if(otherWarningCount > 0) String.format( context.getString(R.string.map_view_weather_warning_suffix), otherWarningCount)
     else ""
 
-    return "${context.getString(R.string.map_view_weather_warning_prefix)} $first $otherWarningLabel"
+    return "⚠️ ${context.getString(R.string.map_view_weather_warning_prefix)} $first $otherWarningLabel"
 }

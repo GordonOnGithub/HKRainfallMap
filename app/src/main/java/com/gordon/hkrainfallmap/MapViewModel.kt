@@ -115,7 +115,7 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
         rainfallDataUpdateJob = viewModelScope.launch {
             TickerUtil.tickerFlow( MapConstants.rainfallDataRefreshInterval.milliseconds).onEach {
 
-                updateRainfallDataSet()
+                updateDataIfNeeded()
 
             }.cancellable().collect()
         }
@@ -123,10 +123,21 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
     }
 
     fun handleAppResume(){
-        val lastRainfallDataUpdateTimestamp = lastRainfallDataUpdateTimestamp.value ?: return
-        if (Date().time - lastRainfallDataUpdateTimestamp.time > MapConstants.rainfallDataRefreshInterval) {
+        updateDataIfNeeded()
+    }
+
+    private fun updateDataIfNeeded(){
+
+        lastRainfallDataUpdateTimestamp.value?.let {
+            if (Date().time - it.time > MapConstants.rainfallDataRefreshInterval) {
+                updateRainfallDataSet()
+            }
+        }
+
+        if (lastRainfallDataUpdateTimestamp.value == null) {
             updateRainfallDataSet()
         }
+
     }
 
      fun updateRainfallDataSet () {

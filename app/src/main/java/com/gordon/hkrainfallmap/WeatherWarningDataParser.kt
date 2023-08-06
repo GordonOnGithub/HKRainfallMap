@@ -28,7 +28,7 @@ class WeatherWarningDataParser : WeatherWarningDataParserType {
 
             }.map { it.value }
 
-            return sortedWarningData
+            return sortedWarningData.filter { it.actionCode != "CANCEL" }
         } catch (e : Exception){
             return null
         }
