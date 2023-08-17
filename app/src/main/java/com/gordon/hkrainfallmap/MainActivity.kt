@@ -68,7 +68,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    val mapViewModel : MapViewModel = MapViewModel()
+    val mapViewModel : MapViewModel by lazy {
+        MapViewModel(context = this)
+    }
 
     val settingsViewModel by lazy {
         SettingsViewModel(context = this)

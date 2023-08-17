@@ -3,6 +3,9 @@ package com.gordon.hkrainfallmap
 import android.app.Application
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
+import java.util.Date
 
 fun Double.getRainfallTileColor() : Color? {
     if (this >= 20) {
@@ -82,4 +85,8 @@ fun List<WeatherWarningData>.summary(context : Context): String?{
     else ""
 
     return "⚠️ ${context.getString(R.string.map_view_weather_warning_prefix)} $first $otherWarningLabel"
+}
+
+fun Date.getNiceFormattedString() : String {
+    return SimpleDateFormat("yyyy/MM/dd HH:mm").format(this)
 }

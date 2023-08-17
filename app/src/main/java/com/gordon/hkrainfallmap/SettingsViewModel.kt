@@ -13,7 +13,7 @@ class SettingsViewModel(context: Context) : ViewModel() {
     val context = context
     val showAppInfo : MutableLiveData<Boolean> = MutableLiveData(false)
 
-    private val appVersion = "1.0"
+    private val appVersion = "1.2"
 
     fun getAppInfoArray() : List<Pair<String, URL?>> {
 

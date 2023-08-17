@@ -11,6 +11,7 @@ interface APIManagerType {
 
     fun  getWeatherWarningDataSet( callback: WeatherWarningAPICallback)
 
+    fun getWeatherStationTemperatureDataSet( callback: WeatherStationTemperatureAPICallback)
 }
 
 class APIManager() : APIManagerType {
@@ -33,10 +34,23 @@ class APIManager() : APIManagerType {
     }
 
     override fun getWeatherWarningDataSet( callback: WeatherWarningAPICallback){
-        // TODO: take locale as parameter
         val langCode = if (locale.language.contains("zh") ) "tc" else "en"
 
         val url = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=${langCode}"
+
+        val request: Request = Request.Builder()
+            .url(url)
+            .get()
+            .build()
+
+        val call = client.newCall(request)
+
+        call.enqueue(callback)
+    }
+
+    override fun getWeatherStationTemperatureDataSet( callback: WeatherStationTemperatureAPICallback){
+
+        val url = "https://data.weather.gov.hk/weatherAPI/hko_data/regional-weather/latest_1min_temperature.csv"
 
         val request: Request = Request.Builder()
             .url(url)
@@ -84,6 +98,11 @@ class MockAPIManager : APIManagerType {
         callback.onDataReceivedBlock?.let {
             it(mockDataSet)
         }
+    }
+
+    override fun getWeatherStationTemperatureDataSet( callback: WeatherStationTemperatureAPICallback){
+        // TODO: mock data
+        callback.onFailureBlock?.let { it() }
     }
 
 }

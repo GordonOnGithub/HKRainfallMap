@@ -1,5 +1,6 @@
 package com.gordon.hkrainfallmap
 
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.descriptors.StructureKind
 import java.time.Duration
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
@@ -22,8 +24,11 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 typealias RainfallRange = Pair<Double, Double>
+enum class MapMode {
+    RAINFALL, WEATHERSTATION
+}
 
-class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
+class MapViewModel(apiManager: APIManagerType = APIManager(), val context : Context) : ViewModel() {
 
     private val apiManager: APIManagerType = apiManager
 
@@ -52,12 +57,8 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     val locationEnabled : MutableLiveData<Boolean> = MutableLiveData(true)
 
-
     private val _location : MutableLiveData<LatLng?> = MutableLiveData(null)
     val location : LiveData<LatLng?> = _location
-
-    private val _lastLocationUpdateTimestamp : MutableLiveData<Date?> = MutableLiveData(null)
-    val lastLocationUpdateTimestamp : LiveData<Date?> = _lastLocationUpdateTimestamp
 
     private val _currentLocationRainFallRange : MutableLiveData<RainfallRange?> = MutableLiveData(null)
     val currentLocationRainFallRange : LiveData<RainfallRange?> = _currentLocationRainFallRange
@@ -76,7 +77,31 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
     private val _isFetchingWeatherWarningData : MutableLiveData<Boolean> = MutableLiveData(false)
     val isFetchingWeatherWarningData : LiveData<Boolean> = _isFetchingWeatherWarningData
 
+    var lastWeatherWarningUpdateTimestamp : Date? = null
+
     val showWeatherWarningSummary : MutableLiveData<Boolean> = MutableLiveData(false)
+
+    private val _isFetchingWeatherStationData : MutableLiveData<Boolean> = MutableLiveData(false)
+    val isFetchingWeatherStationData : LiveData<Boolean> = _isFetchingWeatherStationData
+
+    private val _weatherStationDataMap : MutableLiveData<Map<String, WeatherStationData>> = MutableLiveData(
+        mapOf()
+    )
+    val weatherStationDataMap : LiveData<Map<String, WeatherStationData>> = _weatherStationDataMap
+
+    var lastWeatherStationDataUpdateTimestamp : Date? = null
+
+    var _mapMode : MutableLiveData<MapMode> = MutableLiveData(MapMode.RAINFALL)
+    var mapMode : LiveData<MapMode> = _mapMode
+
+    fun setMapMode(mode : MapMode) {
+        _mapMode.value = mode
+
+        when(mode) {
+            MapMode.RAINFALL -> updateDataIfNeeded()
+            MapMode.WEATHERSTATION -> updateDataIfNeeded()
+        }
+    }
 
     fun toggleRainfallDataAutoplay(play : Boolean){
 
@@ -128,6 +153,16 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     private fun updateDataIfNeeded(){
 
+        mapMode.value?.let {
+            when (it) {
+                MapMode.RAINFALL -> updateRainfallDataIfNeeded()
+                MapMode.WEATHERSTATION -> updateWeatherStationDataIfNeeded()
+            }
+        }
+
+    }
+    private fun updateRainfallDataIfNeeded(){
+
         lastRainfallDataUpdateTimestamp.value?.let {
             if (Date().time - it.time > MapConstants.rainfallDataRefreshInterval) {
                 updateRainfallDataSet()
@@ -137,8 +172,21 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
         if (lastRainfallDataUpdateTimestamp.value == null) {
             updateRainfallDataSet()
         }
-
     }
+
+    private fun updateWeatherStationDataIfNeeded(){
+
+        lastWeatherStationDataUpdateTimestamp?.let {
+            if (Date().time - it.time > MapConstants.weatherStationDataRefreshInterval) {
+                updateWeatherStationTemperatureDataSet()
+            }
+        }
+
+        if (lastWeatherStationDataUpdateTimestamp== null) {
+            updateWeatherStationTemperatureDataSet()
+        }
+    }
+
 
      fun updateRainfallDataSet () {
 
@@ -188,7 +236,7 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     }
 
-    fun updateWeatherWarningDataSet(){
+    private fun updateWeatherWarningDataSet(){
         if (_isFetchingWeatherWarningData.value != false) return
 
         _isFetchingWeatherWarningData.value = true
@@ -198,14 +246,41 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
                 withContext(Dispatchers.Main) {
                     _weatherWarningDataList.value = it
                     _isFetchingWeatherWarningData.value = false
+                    lastWeatherWarningUpdateTimestamp = Date()
                 }
             }
         }) {
             // failure
             GlobalScope.launch {
                 withContext(Dispatchers.Main) {
-
+                    lastWeatherWarningUpdateTimestamp = Date()
                     _isFetchingWeatherWarningData.value = false
+                }
+            }
+        })
+    }
+
+    fun updateWeatherStationTemperatureDataSet(){
+        if (_isFetchingWeatherStationData.value != false) return
+
+        _isFetchingWeatherStationData.value = true
+
+        apiManager.getWeatherStationTemperatureDataSet(callback = WeatherStationTemperatureAPICallback(onDataReceived = {
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) {
+                    _weatherStationDataMap.value = it
+                    _isFetchingWeatherStationData.value = false
+                    lastWeatherStationDataUpdateTimestamp = Date()
+
+                    updateWeatherWarningDataSet()
+                }
+            }
+        }) {
+            // failure
+            GlobalScope.launch {
+                withContext(Dispatchers.Main) {
+                    lastWeatherStationDataUpdateTimestamp = Date()
+                    _isFetchingWeatherStationData.value = false
                 }
             }
         })
@@ -225,7 +300,6 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
     fun updateCurrentLocation(location : LatLng?){
         _location.value = location
-        _lastLocationUpdateTimestamp.value = Date()
 
         tryFindCurrentLocationRainfallRange()
 
@@ -282,6 +356,13 @@ class MapViewModel(apiManager: APIManagerType = APIManager()) : ViewModel() {
 
         return Pair(targetLocationData.first().expectedRainfall, targetLocationData.last().expectedRainfall)
 
+    }
+
+    fun getScreenTitle(mapMode : MapMode) : String {
+        return when(mapMode){
+            MapMode.RAINFALL -> context.getString(R.string.map_view_top_bar_title)
+            MapMode.WEATHERSTATION -> "HK Weather Stations Map"
+        }
     }
 
 }

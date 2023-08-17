@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
@@ -41,8 +43,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
 import java.util.Date
 
 @Composable
@@ -50,14 +54,28 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
 
     @Composable
     fun topAppBar() {
-        TopAppBar(title = { Text(text = context.getString(R.string.map_view_top_bar_title)) },
-            actions = { Button(onClick = {
 
-                navigationController.navigate(NavigationRoutes.settings)
+        val mapMode : MapMode by mapViewModel.mapMode.observeAsState(initial = MapMode.RAINFALL)
 
-            }) {
-                Text("⚙️", fontSize = 20.sp)
-            } }
+        TopAppBar(title = { Text(text = mapViewModel.getScreenTitle(mapMode = mapMode)) },
+            actions = {
+                Button(onClick = {
+                    if (mapMode == MapMode.RAINFALL) {
+                        mapViewModel.setMapMode(MapMode.WEATHERSTATION)
+                    }else if (mapMode == MapMode.WEATHERSTATION) {
+                        mapViewModel.setMapMode(MapMode.RAINFALL)
+                    }
+
+                }) {
+                    Text( if (mapMode == MapMode.RAINFALL) "\uD83C\uDF21️" else "\uD83C\uDF27️", fontSize = 20.sp)
+                }
+
+                Button(onClick = {
+                    navigationController.navigate(NavigationRoutes.settings)
+                }) {
+                    Text("⚙️", fontSize = 20.sp)
+                }
+            }
         )
     }
 
@@ -131,6 +149,8 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
 
         val locationEnabled : Boolean by mapViewModel.locationEnabled.observeAsState(initial = false)
 
+        val mapMode : MapMode by mapViewModel.mapMode.observeAsState(initial = MapMode.RAINFALL)
+        
         Box(modifier = modifier){
             GoogleMap(
                 modifier = modifier,
@@ -146,20 +166,44 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                 }
             ) {
 
-                Polygon(points = MapConstants.HKBoundaryPolygonPoints, fillColor = Color(0x00000000))
+                if (mapMode == MapMode.RAINFALL) {
+                    Polygon(
+                        points = MapConstants.HKBoundaryPolygonPoints,
+                        fillColor = Color(0x00000000)
+                    )
 
-                for (data in displayedDataSet.values) {
-                    val color = data.rainfall.getRainfallTileColor() ?: continue
+                    for (data in displayedDataSet.values) {
+                        val color = data.rainfall.getRainfallTileColor() ?: continue
 
-                    Polygon(points = data.tilePolygonPoints(), fillColor = color, strokeWidth = 0f)
+                        Polygon(
+                            points = data.tilePolygonPoints(),
+                            fillColor = color,
+                            strokeWidth = 0f
+                        )
+                    }
+                }
 
+                if (mapMode == MapMode.WEATHERSTATION) {
+                    val weatherStationDataMap: Map<String, WeatherStationData> by mapViewModel.weatherStationDataMap.observeAsState(
+                        initial = mapOf()
+                    )
+
+                    for (data in weatherStationDataMap.values) {
+                        Marker(
+                            state = rememberMarkerState(position = data.position),
+                            alpha = 0.8f,
+                            title = data.name,
+                            snippet = "Current temperature: ${data.temperature}°C",
+                        )
+                    }
                 }
             }
-
-            Button(onClick = {
-                mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
-            }, modifier = Modifier.padding(10.dp)) {
-                Text(text = "ℹ️ ${context.getString(R.string.map_view_map_legend)}")
+            if (mapMode == MapMode.RAINFALL) {
+                Button(onClick = {
+                    mapViewModel.showMapLegend.postValue(!mapViewModel.showMapLegend.value!!)
+                }, modifier = Modifier.padding(10.dp)) {
+                    Text(text = "ℹ️ ${context.getString(R.string.map_view_map_legend)}")
+                }
             }
         }
 
@@ -310,7 +354,6 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
-                        mapViewModel.updateWeatherWarningDataSet()
                     }, modifier = Modifier.width(100.dp)) {
                         Text(text = context.getString(R.string.map_view_retry_fetching))
                     }
@@ -332,7 +375,6 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         mapViewModel.updateRainfallDataSet()
-                        mapViewModel.updateWeatherWarningDataSet()
                     }, modifier = Modifier.width(120.dp)) {
                         Text(text = context.getString(R.string.map_view_refresh_data))
                     }
@@ -340,6 +382,50 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
 
             }
         }
+    }
+
+    @Composable
+    fun weatherStationInfoRow() {
+        val isFetchingWeatherStationData : Boolean by mapViewModel.isFetchingWeatherStationData.observeAsState(
+            false
+        )
+
+        val weatherStationDataMap  : Map<String, WeatherStationData> by mapViewModel.weatherStationDataMap.observeAsState(
+            initial = mapOf()
+        )
+
+        Column(modifier = Modifier
+            .padding(10.0.dp)
+            .height(60.dp)) {
+            if(isFetchingWeatherStationData) {
+                Text(text = context.getString(R.string.map_view_fetching_data), fontSize = 20.sp)
+            } else if ( weatherStationDataMap.isEmpty() && mapViewModel.lastWeatherStationDataUpdateTimestamp != null){
+                Row(horizontalArrangement = Arrangement.End) {
+                    Text(text = context.getString(R.string.map_view_fetch_data_failed), fontSize = 20.sp)
+                    Spacer(Modifier.weight(1f))
+                    Button(onClick = {
+                        mapViewModel.updateWeatherStationTemperatureDataSet()
+                    }, modifier = Modifier.width(100.dp)) {
+                        Text(text = context.getString(R.string.map_view_retry_fetching))
+                    }
+                }
+            }  else  {
+                Row {
+                    Text(text = "Select a weather station for current regional temperature.",
+                        modifier = Modifier.padding(5.dp).fillMaxWidth(fraction = 0.75f),
+                        softWrap = true)
+
+                    Spacer(Modifier.weight(1f))
+                    Button(onClick = {
+                        mapViewModel.updateWeatherStationTemperatureDataSet()
+                    }, modifier = Modifier.width(120.dp)) {
+                        Text(text = context.getString(R.string.map_view_refresh_data))
+                    }
+                }
+
+            }
+        }
+
     }
 
     @Composable
@@ -396,6 +482,16 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                         }
                     }
 
+                    mapViewModel.lastWeatherWarningUpdateTimestamp?.let {
+                        Text(
+                            "${context.getString(R.string.map_view_last_update_timestamp)}: ${it.getNiceFormattedString()}",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp)
+                        )
+                    }
+
+
                 }
             },
             confirmButton = {
@@ -416,23 +512,29 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
         },
         content = {padding ->
 
+            val mapMode : MapMode by mapViewModel.mapMode.observeAsState(initial = MapMode.RAINFALL)
+
             Box(contentAlignment = Alignment.Center, modifier = Modifier
                 .padding(padding)) {
                 Column(verticalArrangement = Arrangement.Top) {
 
-                    rainfallInfoRow()
-
+                    if (mapMode == MapMode.RAINFALL) {
+                        rainfallInfoRow()
+                    } else if (mapMode == MapMode.WEATHERSTATION) {
+                        weatherStationInfoRow()
+                    }
 
                     rainfallMap(modifier = Modifier.weight(15f, fill = true))
 
                     WeatherWarningInfoRow()
 
-                    ForecastTimeSwitch(
-                        modifier = Modifier
-                            .weight(3f, fill = true)
-                            .fillMaxWidth()
-                    )
-
+                    if (mapMode == MapMode.RAINFALL) {
+                        ForecastTimeSwitch(
+                            modifier = Modifier
+                                .weight(3f, fill = true)
+                                .fillMaxWidth()
+                        )
+                    }
 
                     val lastUpdateTimestamp: Date? by mapViewModel.lastRainfallDataUpdateTimestamp.observeAsState(
                         null
@@ -443,20 +545,33 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                     )
 
                     Row(modifier = Modifier.height(30.dp)) {
-                        if (lastUpdateTimestamp != null) {
+                        if (mapMode == MapMode.RAINFALL &&
+                            lastUpdateTimestamp != null &&
+                            !displayedDataSet.isNullOrEmpty()) {
                             Text(
                                 text = "${context.getString(R.string.map_view_last_update_timestamp)}: ${displayedDataSet.values.first().updateTimeString.getNiceFormattedDateTimeStringFromDatetimeString()}",
                                 modifier = Modifier.padding(5.dp)
                             )
+                        } else if (mapMode == MapMode.WEATHERSTATION){
+                            mapViewModel.lastWeatherStationDataUpdateTimestamp?.let {
+                                Text(
+                                    text = "${context.getString(R.string.map_view_last_update_timestamp)}: ${it.getNiceFormattedString()}",
+                                    modifier = Modifier.padding(5.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                val isFetchingData: Boolean by mapViewModel.isFetchingData.observeAsState(
+                val isFetchingRainfallData: Boolean by mapViewModel.isFetchingData.observeAsState(
                     false
                 )
 
-                if (isFetchingData) {
+                val isFetchingWeatherStationData: Boolean by mapViewModel.isFetchingWeatherStationData.observeAsState(
+                    false
+                )
+
+                if (isFetchingRainfallData || isFetchingWeatherStationData) {
                     CircularProgressIndicator()
                 }
 
