@@ -361,7 +361,7 @@ class MapViewModel(apiManager: APIManagerType = APIManager(), val context : Cont
     fun getScreenTitle(mapMode : MapMode) : String {
         return when(mapMode){
             MapMode.RAINFALL -> context.getString(R.string.map_view_top_bar_title)
-            MapMode.WEATHERSTATION -> "HK Weather Stations Map"
+            MapMode.WEATHERSTATION -> context.getString(R.string.map_view_top_bar_regional_temperature_map_title)
         }
     }
 

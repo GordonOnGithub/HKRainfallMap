@@ -90,3 +90,7 @@ fun List<WeatherWarningData>.summary(context : Context): String?{
 fun Date.getNiceFormattedString() : String {
     return SimpleDateFormat("yyyy/MM/dd HH:mm").format(this)
 }
+
+fun String.toLowerSnakeCase() : String {
+    return this.lowercase().replace(" ", "_")
+}

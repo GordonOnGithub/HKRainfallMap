@@ -193,7 +193,7 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                             state = rememberMarkerState(position = data.position),
                             alpha = 0.8f,
                             title = data.name,
-                            snippet = "Current temperature: ${data.temperature}°C",
+                            snippet = "\uD83C\uDF21️: ${data.temperature}°C",
                         )
                     }
                 }
@@ -411,7 +411,7 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
                 }
             }  else  {
                 Row {
-                    Text(text = "Select a weather station for current regional temperature.",
+                    Text(text = context.getString(R.string.map_view_select_weather_station),
                         modifier = Modifier.padding(5.dp).fillMaxWidth(fraction = 0.75f),
                         softWrap = true)
 
@@ -437,7 +437,7 @@ fun RainfallNowcastMapScreen(mapViewModel: MapViewModel, context: Context, navig
         if (!weatherWarningDataList.isNullOrEmpty()) {
 
             Row(horizontalArrangement = Arrangement.Center, modifier = Modifier
-                .height(60.dp)
+                .height(80.dp)
                 .background(MapConstants.yellowTileColor())
                 .fillMaxWidth()
             ){
