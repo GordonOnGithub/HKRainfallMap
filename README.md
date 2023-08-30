@@ -1,3 +1,7 @@
 # HKRainfallMap
-This is the repository of Hong Kong Rainfall Map. Available on Google Play:
+
+A weather map of Hong Kong thats visualize regional rainfall and temperature, created with Kotlin + Jetpack Compose.
+
+This app is available on Google Play:
+
 https://play.google.com/store/apps/details?id=com.gordon.hkrainfallmap
